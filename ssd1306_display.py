@@ -87,23 +87,23 @@ class InfoButton:
                     self._reset()
             await asyncio.sleep(0.001)
 
-    @property()
+    @property
     def cpu(self):
         return get_shell_output("top -bn1 | grep load | awk '{printf \"CPU: %3d%%\", $(NF-2)*100/4}'")
 
-    @property()
+    @property
     def memory(self):
         return get_shell_output("free -m | awk 'NR==2{printf \"MEM: %3d%%\", $3*100/$2 }'")
 
-    @property()
+    @property
     def hostname(self):
         return get_shell_output("hostname")
 
-    @property()
+    @property
     def ip_address(self):
         return get_shell_output("hostname -I | cut -d\' \' -f1")
 
-    @property()
+    @property
     def uptime(self):
         return get_shell_output("uptime -p")
 
@@ -139,6 +139,7 @@ class InfoButton:
     def _on_short_release(self):
         self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
                           bottom_row="CPU: %s | MEM: %S".format(self.cpu, self.memory))
+        self._set_delay()
 
     def _on_long_release(self, held_time):
         self.hold_display = False
@@ -153,7 +154,7 @@ class InfoButton:
         else:
             self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
                               bottom_row="CPU: %s | MEM: %S".format(self.cpu, self.memory))
-        self._set_delay(self.display_duration)
+        self._set_delay()
 
     def _display_msg(self, top_row: str = '', middle_row: str = '', bottom_row: str = ''):
         if self.display_task is not None:
@@ -171,8 +172,8 @@ class InfoButton:
     def _reset_timer(self):
         self.display_timer = 0
 
-    def _set_delay(self, display_duration: int):
-        self.pending_task = asyncio.create_task(asyncio.sleep(display_duration))
+    def _set_delay(self):
+        self.pending_task = asyncio.create_task(asyncio.sleep(self.display_duration))
 
     def _reset(self):
         self._clear_screen()
@@ -183,6 +184,7 @@ class InfoButton:
         self.presses = 0
 
 
+btn = InfoButton()
 def main():
     if __name__ == '__main__':
-        InfoButton()
+        btn = InfoButton()
