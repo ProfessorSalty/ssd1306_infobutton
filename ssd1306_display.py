@@ -1,21 +1,15 @@
-import subprocess
 import math
 import asyncio
 import time
+import re
+from subprocess import Popen, PIPE, check_output
 
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import ssd1306
+from PIL import ImageFont
 from RPi import GPIO
-
-
-def round_down(n, decimals=0):
-    multiplier = 10 ** decimals
-    return math.floor(n * multiplier) / multiplier
-
-
-def get_shell_output(cmd: str):
-    return subprocess.check_output(cmd, shell=True)
+from typing import List
 
 
 class InfoButton:
@@ -45,6 +39,7 @@ class InfoButton:
         self.hold_start_time = 0
         self.press_time = 0
         self.presses = 0
+        self.font = ImageFont.truetype('./PressStart2P-Regular.ttf', 6)
 
         asyncio.run(self._run())
 
@@ -62,7 +57,8 @@ class InfoButton:
                     self.held = True
                     self.hold_start_time = self.press_time
                 elif self.held:
-                    held_time = round(time.time() - self.hold_start_time) + self.hold_time
+                    held_time = round(
+                        time.time() - self.hold_start_time) + self.hold_time
                     self._on_hold(held_time)
 
             elif GPIO.input(self.pin) == 1 and self.pressed and not self.held:
@@ -71,7 +67,8 @@ class InfoButton:
             elif GPIO.input(self.pin) == 1 and self.held:
                 self.pressed = False
                 self.held = False
-                held_time = round(time.time() - self.hold_start_time) + self.hold_time
+                held_time = round(
+                    time.time() - self.hold_start_time) + self.hold_time
                 self._on_long_release(held_time)
             await asyncio.sleep(0.001)
 
@@ -88,24 +85,38 @@ class InfoButton:
             await asyncio.sleep(0.001)
 
     @property
-    def cpu(self):
-        return get_shell_output("top -bn1 | grep load | awk '{printf \"CPU: %3d%%\", $(NF-2)*100/4}'")
+    def cpu(self) -> float:
+        top = Popen(["top", "-bn1"], stdout=PIPE)
+        grep = check_output(["grep", "Cpu"], stdin=top.stdout).decode()
+        try:
+            cpu = float(
+                re.search(r'Cpu\(s\):\s+\d+.\d+\sus,\s+(?P<cpu>\d+.\d+)', grep).group('cpu'))
+        except AttributeError:
+            cpu = 0
+        return cpu
 
     @property
-    def memory(self):
-        return get_shell_output("free -m | awk 'NR==2{printf \"MEM: %3d%%\", $3*100/$2 }'")
+    def memory(self) -> float:
+        free = check_output(["free", "-m"]).decode().split('\n')
+        mem = free[1]
+        try:
+            total, used = re.search(r'Mem:\s+(\d+)\s+(\d+)', mem).groups()
+            pmem = (float(used) / float(total)) * 100
+        except AttributeError:
+            pmem = 0
+        return pmem
 
     @property
-    def hostname(self):
-        return get_shell_output("hostname")
+    def hostname(self) -> str:
+        return check_output("hostname").decode()
 
     @property
-    def ip_address(self):
-        return get_shell_output("hostname -I | cut -d\' \' -f1")
+    def ip_address(self) -> str:
+        return check_output(["hostname", "-I"]).decode()
 
     @property
-    def uptime(self):
-        return get_shell_output("uptime -p")
+    def uptime(self) -> str:
+        return check_output(["uptime", "-p"]).decode()
 
     def _update_task(self):
         if (self.display_task is None or self.display_task.cancelled) and self.pending_task is not None:
@@ -138,7 +149,7 @@ class InfoButton:
 
     def _on_short_release(self):
         self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
-                          bottom_row="CPU: %s | MEM: %S".format(self.cpu, self.memory))
+                          bottom_row="C {:6.2f}% | M {:6.2f}%".format(self.cpu, self.memory))
         self._set_delay()
 
     def _on_long_release(self, held_time):
@@ -153,7 +164,7 @@ class InfoButton:
             self._display_msg(middle_row="Restarting...")
         else:
             self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
-                              bottom_row="CPU: %s | MEM: %S".format(self.cpu, self.memory))
+                              bottom_row="C {:6.2f}% | M {:6.2f}%".format(self.cpu, self.memory))
         self._set_delay()
 
     def _display_msg(self, top_row: str = '', middle_row: str = '', bottom_row: str = ''):
@@ -161,9 +172,9 @@ class InfoButton:
             self.display_task.cancel()
         self._reset_tasks()
         with canvas(self.device) as draw:
-            draw.text((0, 0), top_row, fill="white")
-            draw.text((0, 12), middle_row, fill="white")
-            draw.text((0, 24), bottom_row, fill="white")
+            draw.text((0, 0), top_row, fill="white", font=self.font)
+            draw.text((0, 12), middle_row, fill="white", font=self.font)
+            draw.text((0, 24), bottom_row, fill="white", font=self.font)
 
     def _clear_screen(self):
         with canvas(self.device) as draw:
@@ -173,7 +184,8 @@ class InfoButton:
         self.display_timer = 0
 
     def _set_delay(self):
-        self.pending_task = asyncio.create_task(asyncio.sleep(self.display_duration))
+        self.pending_task = asyncio.create_task(
+            asyncio.sleep(self.display_duration))
 
     def _reset(self):
         self._clear_screen()
@@ -185,6 +197,8 @@ class InfoButton:
 
 
 btn = InfoButton()
+
+
 def main():
     if __name__ == '__main__':
         btn = InfoButton()
