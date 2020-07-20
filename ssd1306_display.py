@@ -14,9 +14,10 @@ from typing import List
 
 class InfoButton:
     def __init__(self, info_btn_pin=20, display_duration=5, hold_time=1, time_to_restart=3, time_to_shutdown=3,
-                 time_to_cancel=3):
+                 time_to_cancel=3, flip=False):
         serial = i2c(port=1, address=0x3c)
-        self.device = ssd1306(serial, height=32, rotate=2)
+        rotation = flip ? 2 : 0
+        self.device = ssd1306(serial, height=32, rotate=rotation)
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(info_btn_pin, GPIO.IN)
@@ -138,7 +139,7 @@ class InfoButton:
         elif held_time >= self.time_to_shutdown:
             self._display_msg(middle_row="Release to shutdown" + dots)
         elif held_time >= self.time_to_restart:
-            self._display_msg(middle_row="Release to restart" + dots)
+            self._display_msg(middle_row="Release to reboot" + dots)
         else:
             self._display_msg(middle_row=dots)
 
@@ -147,9 +148,12 @@ class InfoButton:
         self.release_display = False
         self.press_display = True
 
-    def _on_short_release(self):
+    def _display_main_msg(self):
         self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
                           bottom_row="C {:6.2f}% | M {:6.2f}%".format(self.cpu, self.memory))
+
+    def _on_short_release(self):
+        self._display_main_msg()
         self._set_delay()
 
     def _on_long_release(self, held_time):
@@ -160,11 +164,12 @@ class InfoButton:
             self._display_msg(middle_row="Cancelling shutdown...")
         elif held_time >= self.time_to_shutdown:
             self._display_msg(middle_row="Shutting down...")
+            self._shutdown()
         elif held_time >= self.time_to_restart:
-            self._display_msg(middle_row="Restarting...")
+            self._display_msg(middle_row="Rebooting...")
+            self._reboot()
         else:
-            self._display_msg(top_row=self.hostname, middle_row=self.ip_address,
-                              bottom_row="C {:6.2f}% | M {:6.2f}%".format(self.cpu, self.memory))
+            self._display_main_msg()
         self._set_delay()
 
     def _display_msg(self, top_row: str = '', middle_row: str = '', bottom_row: str = ''):
@@ -186,6 +191,12 @@ class InfoButton:
     def _set_delay(self):
         self.pending_task = asyncio.create_task(
             asyncio.sleep(self.display_duration))
+
+    def _shutdown(self):
+        check_output(["sudo", "shutdown", "now"])
+
+    def _reboot(self):
+        check_output(["sudo", "reboot", "now"])
 
     def _reset(self):
         self._clear_screen()
