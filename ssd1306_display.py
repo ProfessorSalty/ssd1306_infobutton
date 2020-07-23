@@ -1,4 +1,3 @@
-import math
 import asyncio
 import time
 import re
@@ -9,14 +8,13 @@ from luma.core.render import canvas
 from luma.oled.device import ssd1306
 from PIL import ImageFont
 from RPi import GPIO
-from typing import List
 
 
 class InfoButton:
     def __init__(self, info_btn_pin=20, display_duration=5, hold_time=1, time_to_restart=3, time_to_shutdown=3,
                  time_to_cancel=3, flip=False):
         serial = i2c(port=1, address=0x3c)
-        rotation = flip ? 2 : 0
+        rotation = 2 if flip else 0
         self.device = ssd1306(serial, height=32, rotate=rotation)
 
         GPIO.setmode(GPIO.BCM)
