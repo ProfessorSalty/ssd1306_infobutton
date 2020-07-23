@@ -205,9 +205,3 @@ class InfoButton:
         self.presses = 0
 
 
-btn = InfoButton()
-
-
-def main():
-    if __name__ == '__main__':
-        btn = InfoButton()
