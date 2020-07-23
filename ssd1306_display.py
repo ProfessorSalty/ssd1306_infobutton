@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 import re
 from subprocess import Popen, PIPE, check_output
@@ -12,7 +13,10 @@ from RPi import GPIO
 
 class InfoButton:
     def __init__(self, info_btn_pin=20, display_duration=5, hold_time=1, time_to_restart=3, time_to_shutdown=3,
-                 time_to_cancel=3, flip=False):
+                 time_to_cancel=3, flip=False, font='./PressStart2P-Regular.ttf'):
+        this_dir, this_filename = os.path.split(__file__)
+        font_path = os.path.join(this_dir, font)
+
         serial = i2c(port=1, address=0x3c)
         rotation = 2 if flip else 0
         self.device = ssd1306(serial, height=32, rotate=rotation)
@@ -38,7 +42,7 @@ class InfoButton:
         self.hold_start_time = 0
         self.press_time = 0
         self.presses = 0
-        self.font = ImageFont.truetype('./PressStart2P-Regular.ttf', 6)
+        self.font = ImageFont.truetype(font_path, 6)
 
         asyncio.run(self._run())
 
@@ -203,5 +207,3 @@ class InfoButton:
         self.release_display = False
         self.press_display = False
         self.presses = 0
-
-
