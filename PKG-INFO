@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: ssd1306-infobutton
+Version: 0.1.3
+Summary: A script to control a SSD1306 OLED display with a button on the Raspberry Pi
+License: MIT
+Author: Greg Smith
+Author-email: gregory_smith@gregoftheweb.com
+Requires-Python: >=3.7,<4.0
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Requires-Dist: luma.oled (>=3.5.0,<4.0.0)
+Requires-Dist: rpi.gpio (>=0.7.0,<0.8.0)

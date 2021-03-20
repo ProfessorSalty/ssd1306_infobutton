@@ -11,9 +11,9 @@ from PIL import ImageFont
 from RPi import GPIO
 
 
-class InfoButton:
+class SSD1306InfoButton:
     def __init__(self, info_btn_pin=20, display_duration=5, hold_time=1, time_to_restart=3, time_to_shutdown=3,
-                 time_to_cancel=3, flip=False, font='./PressStart2P-Regular.ttf'):
+                 time_to_cancel=3, flip=False, top_offset=0, font='PressStart2P-Regular.ttf'):
         this_dir, this_filename = os.path.split(__file__)
         font_path = os.path.join(this_dir, font)
 
@@ -42,6 +42,7 @@ class InfoButton:
         self.hold_start_time = 0
         self.press_time = 0
         self.presses = 0
+        self.top_offset = top_offset
         self.font = ImageFont.truetype(font_path, 6)
 
         asyncio.run(self._run())
@@ -179,9 +180,9 @@ class InfoButton:
             self.display_task.cancel()
         self._reset_tasks()
         with canvas(self.device) as draw:
-            draw.text((0, 0), top_row, fill="white", font=self.font)
-            draw.text((0, 12), middle_row, fill="white", font=self.font)
-            draw.text((0, 24), bottom_row, fill="white", font=self.font)
+            draw.text((0, 0 + self.top_offset), top_row, fill="white", font=self.font)
+            draw.text((0, 12 + self.top_offset), middle_row, fill="white", font=self.font)
+            draw.text((0, 24 + self.top_offset), bottom_row, fill="white", font=self.font)
 
     def _clear_screen(self):
         with canvas(self.device) as draw:
