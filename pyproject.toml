@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ssd1306_infobutton"
-version = "0.1.3"
+version = "0.1.5"
 description = "A script to control a SSD1306 OLED display with a button on the Raspberry Pi"
 authors = ["Greg Smith <gregory_smith@gregoftheweb.com>"]
 license = "MIT"
